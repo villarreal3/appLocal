@@ -117,7 +117,7 @@ func form(w fyne.Window) fyne.Widget {
 	}
 
 	// we can also append items
-	form.Append("Texto", textArea)
+	form.Append("Description", textArea)
 
 	provinceSelect := widget.NewSelect([]string{"anhui", "zhejiang", "shanghai"}, func(value string) {
 		fmt.Println("province:", value)
