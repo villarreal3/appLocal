@@ -56,7 +56,9 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"strconv"
 
+	"fyne.io/fyne/driver/mobile"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
@@ -65,19 +67,43 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type numericalEntry struct {
+	widget.Entry
+}
+
+func newNumericalEntry() *numericalEntry {
+	entry := &numericalEntry{}
+	entry.ExtendBaseWidget(entry)
+	return entry
+}
+
+func (e *numericalEntry) TypedRune(r rune) {
+	switch r {
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',':
+		e.Entry.TypedRune(r)
+	}
+}
+
+func (e *numericalEntry) TypedShortcut(shortcut fyne.Shortcut) {
+	paste, ok := shortcut.(*fyne.ShortcutPaste)
+	if !ok {
+		e.Entry.TypedShortcut(shortcut)
+		return
+	}
+
+	content := paste.Clipboard.Content()
+	if _, err := strconv.ParseFloat(content, 64); err == nil {
+		e.Entry.TypedShortcut(shortcut)
+	}
+}
+
+func (e *numericalEntry) Keyboard() mobile.KeyboardType {
+	return mobile.NumberKeyboard
+}
+
 func form(w fyne.Window) fyne.Widget {
 	entry := widget.NewEntry()
 	textArea := widget.NewMultiLineEntry()
-
-	grid := container.NewGridWithColumns(3)
-
-	for i := 0; i < 9; i++ {
-		grid.Add(widget.NewCard(
-			"This is my title",
-			"This is my text",
-			nil,
-		))
-	}
 
 	form := &widget.Form{
 		Items: []*widget.FormItem{ // we can specify items in the constructor
@@ -100,8 +126,30 @@ func form(w fyne.Window) fyne.Widget {
 
 	form.Append("hola", provinceBox)
 
-	form.Append("Items", grid)
+	grid := container.NewGridWithColumns(1)
+	grid.Add(widget.NewCard(
+		"This is my title",
+		"prueba 2",
+		nil,
+	))
 
+	gridContainer := container.NewGridWithColumns(3)
+
+	for i := 0; i < 9; i++ {
+		top := grid
+		middle := newNumericalEntry()
+		left := widget.NewButton("click me", func() {
+			log.Println("tapped")
+		})
+		right := widget.NewButton("click me", func() {
+			log.Println("The number is:", middle.Text)
+		})
+		content := container.New(layout.NewBorderLayout(top, nil, left, right),
+			top, left, right, middle)
+		gridContainer.Add(content)
+	}
+
+	form.Append("Items", gridContainer)
 	return form
 }
 
@@ -139,7 +187,5 @@ func main() {
 	w.Resize(fyne.NewSize(float32(C.width()), float32(C.height())))
 
 	w.CenterOnScreen()
-
-	//w.Resize(fyne.NewSize(500, 300))
 	w.ShowAndRun()
 }
