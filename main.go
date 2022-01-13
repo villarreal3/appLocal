@@ -133,7 +133,7 @@ func tabs(w fyne.Window) fyne.Widget {
 
 func main() {
 	myApp := app.New()
-	w := myApp.NewWindow("TabContainer Widget")
+	w := myApp.NewWindow("Title")
 
 	w.SetContent(tabs(w))
 	w.Resize(fyne.NewSize(float32(C.width()), float32(C.height())))
