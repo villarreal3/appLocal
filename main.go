@@ -49,6 +49,9 @@ int height(){
 
 	return size[1];
 }
+
+
+
 */
 import "C"
 
@@ -108,7 +111,7 @@ func form(w fyne.Window) fyne.Widget {
 	form := &widget.Form{
 		Items: []*widget.FormItem{ // we can specify items in the constructor
 			{Text: "Si", Widget: entry}},
-		SubmitText: "Agregar",
+		SubmitText: "Siguiente",
 		OnSubmit: func() { // optional, handle form submission
 			log.Println("Form submitted:", entry.Text)
 			log.Println("multiline:", textArea.Text)
@@ -136,14 +139,33 @@ func form(w fyne.Window) fyne.Widget {
 	gridContainer := container.NewGridWithColumns(3)
 
 	for i := 0; i < 9; i++ {
-		top := grid
+
+		item1 := widget.NewAccordionItem("A",
+			container.NewVBox(
+				widget.NewLabel("A for Apple A for Apple A for Apple A for Apple"),
+				widget.NewLabel("A for Apple A for Apple A for Apple A for Apple")))
+		ac := widget.NewAccordion(item1)
+		top := ac
 		middle := newNumericalEntry()
-		left := widget.NewButton("click me", func() {
+		left := widget.NewButton("Borrar", func() {
 			log.Println("tapped")
 		})
-		right := widget.NewButton("click me", func() {
-			log.Println("The number is:", middle.Text)
-		})
+		right := widget.NewButton("Agregar", nil)
+
+		buttonTitle := "Disable"
+
+		changeButton := func() {
+			// here could be your logic
+			// how to disable/enable button
+			if right.Text == "Disable" {
+				buttonTitle = "Enable"
+				//button.Disable()
+			}
+			right.SetText(buttonTitle)
+			right.Refresh()
+		}
+		right.OnTapped = changeButton
+
 		content := container.New(layout.NewBorderLayout(top, nil, left, right),
 			top, left, right, middle)
 		gridContainer.Add(content)
@@ -151,6 +173,10 @@ func form(w fyne.Window) fyne.Widget {
 
 	form.Append("Items", gridContainer)
 	return form
+}
+
+func scroll(w fyne.Window) fyne.Widget {
+	return container.NewVScroll(form(w))
 }
 
 func tabs(w fyne.Window) fyne.Widget {
@@ -163,10 +189,8 @@ func tabs(w fyne.Window) fyne.Widget {
 	text4 := canvas.NewText("centered", color.White)
 	centered := container.New(layout.NewHBoxLayout(), layout.NewSpacer(), text4, layout.NewSpacer())
 
-	scroll := container.NewVScroll(form(w))
-
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Factura nueva", scroll),
+		container.NewTabItem("Factura nueva", scroll(w)),
 		container.NewTabItem("Tab 1", container.New(layout.NewVBoxLayout(), content, centered)),
 		container.NewTabItem("Tab 1", widget.NewLabel("Hello")),
 		container.NewTabItem("Tab 1", widget.NewLabel("Hello")),
