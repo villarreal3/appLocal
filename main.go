@@ -136,9 +136,9 @@ func form(w fyne.Window) fyne.Widget {
 		nil,
 	))
 
-	gridContainer := container.NewGridWithColumns(3)
+	gridContainer := container.NewGridWithColumns(2)
 
-	for i := 0; i < 9; i++ {
+	for i := 0; i < 8; i++ {
 
 		item1 := widget.NewAccordionItem("A",
 			container.NewVBox(
