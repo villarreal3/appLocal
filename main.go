@@ -1,67 +1,13 @@
 package main
 
-/*
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-unsigned short *get_screen_size(void)
-{
-    static unsigned short size[2];
-    char *array[8];
-    char screen_size[64];
-    char* token = NULL;
-
-    FILE *cmd = popen("xdpyinfo | awk '/dimensions/ {print $2}'", "r");
-
-    if (!cmd)
-        return 0;
-
-    while (fgets(screen_size, sizeof(screen_size), cmd) != NULL);
-    pclose(cmd);
-
-    token = strtok(screen_size, "x\n");
-
-    if (!token)
-        return 0;
-
-    for (unsigned short i = 0; token != NULL; ++i) {
-        array[i] = token;
-        token = strtok(NULL, "x\n");
-    }
-    size[0] = atoi(array[0]);
-    size[1] = atoi(array[1]);
-    size[2] = -1;
-
-    return size;
-}
-
-
-int width()
-{
-    unsigned short *size = get_screen_size();
-
-    return size[0];
-}
-
-int height(){
-	unsigned short *size = get_screen_size();
-
-	return size[1];
-}
-
-
-
-*/
 import "C"
 
 import (
-	"encoding/json"
 	"fmt"
 	"image/color"
-	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 
 	"database/sql"
@@ -90,20 +36,39 @@ func existeError(err error) bool {
 	return (err != nil)
 }
 
-var path = "/home/daniel/Documentos/data/prueba.json"
+var path = "C:/Users/dany0/OneDrive/Documentos/img/prueba.json"
 
 func crearArchivo() {
-	//Verifica que el archivo existe
-	var _, err = os.Stat(path)
-	//Crea el archivo si no existe
-	if os.IsNotExist(err) {
-		var file, err = os.Create(path)
-		if existeError(err) {
-			return
+	/*
+		//Verifica que el archivo existe
+		var _, err = os.Stat(path)
+		//Crea el archivo si no existe
+		if os.IsNotExist(err) {
+			var file, err = os.Create(path)
+			if existeError(err) {
+				return
+			}
+			defer file.Close()
 		}
-		defer file.Close()
+		fmt.Println("File Created Successfully", path)
+	*/
+
+	f, err := os.Create("data.txt")
+
+	if err != nil {
+		log.Fatal(err)
 	}
-	fmt.Println("File Created Successfully", path)
+
+	defer f.Close()
+
+	_, err2 := f.WriteString("old falcon\n")
+
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	fmt.Println("done")
+
 }
 
 type Databases struct {
@@ -126,15 +91,18 @@ type Products struct {
 func obtenerContactos() ([]Products, error) {
 	contactos := []Products{}
 	db, err := obtenerBaseDeDatos()
+	println("Hola0")
 	if err != nil {
 		return nil, err
 	}
+	println("Hola1")
 	defer db.Close()
-	filas, err := db.Query("SELECT idproducts, name, description, price FROM ordenes.products")
+	filas, err := db.Query("select idproducts, name, DESCRIPTION, price FROM local.products")
 
 	if err != nil {
 		return nil, err
 	}
+	println("Hola2")
 	// Si llegamos aquí, significa que no ocurrió ningún error
 	defer filas.Close()
 
@@ -190,21 +158,35 @@ func (e *numericalEntry) Keyboard() mobile.KeyboardType {
 }
 
 func obtenerBaseDeDatos() (db *sql.DB, e error) {
+	/*
 
-	crearArchivo()
+		crearArchivo()
 
-	jsonFile, _ := os.Open("/home/daniel/Documentos/data/prueba.json")
+		var operatingSystem string
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+		operatingSystem = "C:/Users/dany0/OneDrive/Documentos/img/prueba.json"
+		if runtime.GOOS == "windows" {
+			operatingSystem = "C:/Users/dany0/OneDrive/Documentos/img"
+		} else {
+			operatingSystem = "/home/daniel/Documentos/data/prueba.json"
+		}
+		jsonFile, _ := os.Open(operatingSystem)
+		byteValue, _ := ioutil.ReadAll(jsonFile)
 
-	var databases Databases
+		var databases Databases
 
-	json.Unmarshal(byteValue, &databases)
+		json.Unmarshal(byteValue, &databases)
 
-	host := databases.Databases[0].Host
-	usuario := databases.Databases[0].Usuario
-	pass := databases.Databases[0].Pass
-	nombreBaseDeDatos := databases.Databases[0].NombreBaseDeDatos
+		host := databases.Databases[0].Host
+		usuario := databases.Databases[0].Usuario
+		pass := databases.Databases[0].Pass
+		nombreBaseDeDatos := databases.Databases[0].NombreBaseDeDatos
+
+	*/
+	host := "tcp(127.0.0.1:3306)"
+	usuario := "root"
+	pass := "Dangel102"
+	nombreBaseDeDatos := "local"
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s/%s", usuario, pass, host, nombreBaseDeDatos))
 	if err != nil {
@@ -216,18 +198,17 @@ func obtenerBaseDeDatos() (db *sql.DB, e error) {
 func gridProduct() *fyne.Container {
 	contactos, _ := obtenerContactos()
 
-	grid := container.NewGridWithColumns(
-		1,
-		widget.NewCard(
-			contactos[0].Nombre,
-			contactos[0].Description+"Tama: "+strconv.Itoa(len(contactos)),
-			nil,
-		),
-	)
+	gridContainer := container.NewGridWithColumns(2)
 
-	gridContainer := container.NewGridWithColumns(3)
-
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 7; i++ {
+		grid := container.NewGridWithColumns(
+			1,
+			widget.NewCard(
+				contactos[i].Nombre,
+				"Tama: ",
+				nil,
+			),
+		)
 
 		top := grid
 		middle := newNumericalEntry()
@@ -255,38 +236,61 @@ func gridProduct() *fyne.Container {
 			top, left, right, middle)
 
 		gridContainer.Add(content)
-		fmt.Println(gridContainer)
 	}
 	return gridContainer
 }
 
+type optionCar struct {
+	Seccion string
+	Lavado  string
+}
+
+func newOptionCar(seccion string) *optionCar {
+	option := optionCar{Seccion: seccion}
+	return &option
+}
+
+func typeCar() fyne.Widget {
+	return widget.NewSelect([]string{"Moto", "Taxi chico", "Taxi Grande", "Colegial", "Seda", "SUV", "Pick Up", "Busito"}, func(value string) {
+		seccion := newOptionCar(value)
+		fmt.Println("seccion seleccion:", seccion.Seccion)
+		crearArchivo()
+	})
+}
+func LavadoSelect() fyne.Widget {
+	LavadoSelect := widget.NewSelect([]string{"Espuma", "Sin espuma"}, func(value string) {
+		fmt.Println("seccion seleccion:", value)
+	})
+	return LavadoSelect
+}
+
+func containerOption() *fyne.Container {
+	seccionBox := container.NewVBox(widget.NewLabel("Sección"), layout.NewSpacer(), typeCar())
+
+	LavadoBox := container.NewVBox(widget.NewLabel("Lavado"), layout.NewSpacer(), LavadoSelect())
+	return container.NewHBox(LavadoBox, seccionBox)
+}
+
 func form(w fyne.Window) fyne.Widget {
-	entry := widget.NewEntry()
+	entryPlaca := widget.NewEntry()
+	entryModel := widget.NewEntry()
 	textArea := widget.NewMultiLineEntry()
 
-	form := &widget.Form{
+	return &widget.Form{
 		Items: []*widget.FormItem{ // we can specify items in the constructor
-			{Text: "Si", Widget: entry}},
+			{Text: "Placa", Widget: entryPlaca},
+			{Text: "Modelo", Widget: entryModel},
+			{Text: "Detalles", Widget: textArea},
+			{Text: "Opciones", Widget: containerOption()},
+			//	{Text: "Accesorio", Widget: gridProduct()},
+		},
 		SubmitText: "Siguiente",
 		OnSubmit: func() { // optional, handle form submission
-			log.Println("Form submitted:", entry.Text)
+			log.Println("Form submitted:", entryPlaca.Text)
 			log.Println("multiline:", textArea.Text)
 			w.Close()
 		},
 	}
-
-	// we can also append items
-	form.Append("Description", textArea)
-
-	provinceSelect := widget.NewSelect([]string{"anhui", "zhejiang", "shanghai"}, func(value string) {
-		fmt.Println("province:", value)
-	})
-	provinceBox := container.NewVBox(widget.NewLabel("Province"), layout.NewSpacer(), provinceSelect)
-
-	form.Append("hola", provinceBox)
-
-	form.Append("Items", gridProduct())
-	return form
 }
 
 func scroll(w fyne.Window) fyne.Widget {
@@ -294,11 +298,10 @@ func scroll(w fyne.Window) fyne.Widget {
 }
 
 func tabsSecond(w fyne.Window) fyne.Widget {
-	tabs := container.NewAppTabs(
+	return container.NewAppTabs(
 		container.NewTabItem("Factura nueva", scroll(w)),
 		container.NewTabItem("Tab 1", widget.NewLabel("Hello 1")),
 	)
-	return tabs
 }
 
 func tabs(w fyne.Window) fyne.Widget {
@@ -316,7 +319,7 @@ func tabs(w fyne.Window) fyne.Widget {
 		container.NewTabItem("Tab 1", container.New(layout.NewVBoxLayout(), content, centered)),
 		container.NewTabItem("Tab 1", widget.NewLabel("Hello 2")),
 		container.NewTabItem("Tab 1", widget.NewLabel("Hello 3")),
-		container.NewTabItem("Cerrar", widget.NewLabel("Hello 4")),
+		container.NewTabItem("Cerrar", widget.NewButton("Cerrar aplicación", func() { w.Close() })),
 	)
 
 	tabs.SetTabLocation(container.TabLocationLeading)
@@ -326,11 +329,14 @@ func tabs(w fyne.Window) fyne.Widget {
 
 func main() {
 
+	print(runtime.GOOS)
 	myApp := app.New()
 	w := myApp.NewWindow("Title")
 
 	w.SetContent(tabs(w))
-	w.Resize(fyne.NewSize(float32(C.width()), float32(C.height())))
+	//w.Resize(fyne.NewSize(float32(920), float32(620)))
+
+	w.SetFullScreen(true)
 
 	w.CenterOnScreen()
 	w.ShowAndRun()
