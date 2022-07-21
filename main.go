@@ -3,8 +3,10 @@ package main
 import "C"
 
 import (
+	"encoding/json"
 	"fmt"
 	"image/color"
+	"io/ioutil"
 	"log"
 	"os"
 	"runtime"
@@ -36,24 +38,26 @@ func existeError(err error) bool {
 	return (err != nil)
 }
 
-var path = "C:/Users/dany0/OneDrive/Documentos/img/prueba.json"
+var path = "C:/Users/dany0/OneDrive/Documentos/img"
 
-func crearArchivo() {
-	/*
-		//Verifica que el archivo existe
-		var _, err = os.Stat(path)
-		//Crea el archivo si no existe
-		if os.IsNotExist(err) {
-			var file, err = os.Create(path)
-			if existeError(err) {
-				return
-			}
-			defer file.Close()
+func readDatabase() {
+
+	//Verifica que el archivo existe
+	var _, err = os.Stat(path)
+	//Crea el archivo si no existe
+	if os.IsNotExist(err) {
+		var file, err = os.Create(path + "/prueba.json")
+		if existeError(err) {
+			return
 		}
-		fmt.Println("File Created Successfully", path)
-	*/
+		defer file.Close()
+	}
+	fmt.Println("File Created Successfully", path)
 
-	f, err := os.Create("data.txt")
+}
+
+func crearArchivo(date string, nameFile string) {
+	f, err := os.Create(path + nameFile + ".txt")
 
 	if err != nil {
 		log.Fatal(err)
@@ -61,18 +65,18 @@ func crearArchivo() {
 
 	defer f.Close()
 
-	_, err2 := f.WriteString("old falcon\n")
+	_, err2 := f.WriteString("old falcon\n" + date)
 
 	if err2 != nil {
 		log.Fatal(err2)
 	}
 
-	fmt.Println("done")
+	fmt.Println("Hecho datos")
 
 }
 
 type Databases struct {
-	Databases []Database `json:"database"`
+	Databases []Database `json:"databases"`
 }
 
 type Database struct {
@@ -91,41 +95,33 @@ type Products struct {
 func obtenerContactos() ([]Products, error) {
 	contactos := []Products{}
 	db, err := obtenerBaseDeDatos()
-	println("Hola0")
+
 	if err != nil {
 		return nil, err
 	}
-	println("Hola1")
+
 	defer db.Close()
 	filas, err := db.Query("select idproducts, name, DESCRIPTION, price FROM local.products")
 
 	if err != nil {
 		return nil, err
 	}
-	println("Hola2")
-	// Si llegamos aquí, significa que no ocurrió ningún error
+
 	defer filas.Close()
 
-	// Aquí vamos a "mapear" lo que traiga la consulta en el while de más abajo
 	var c Products
 
-	// Recorrer todas las filas, en un "while"
 	for filas.Next() {
 		err = filas.Scan(&c.Id, &c.Nombre, &c.Description, &c.Price)
-		// Al escanear puede haber un error
 		if err != nil {
 			return nil, err
 		}
-		// Y si no, entonces agregamos lo leído al arreglo
 		contactos = append(contactos, c)
 	}
-	// Vacío o no, regresamos el arreglo de contactos
 	return contactos, nil
 }
 
-type numericalEntry struct {
-	widget.Entry
-}
+type numericalEntry struct{ widget.Entry }
 
 func newNumericalEntry() *numericalEntry {
 	entry := &numericalEntry{}
@@ -158,11 +154,12 @@ func (e *numericalEntry) Keyboard() mobile.KeyboardType {
 }
 
 func obtenerBaseDeDatos() (db *sql.DB, e error) {
+
+	readDatabase()
+
+	var operatingSystem string = "C:/Users/dany0/OneDrive/Documentos/img/prueba.json"
+
 	/*
-
-		crearArchivo()
-
-		var operatingSystem string
 
 		operatingSystem = "C:/Users/dany0/OneDrive/Documentos/img/prueba.json"
 		if runtime.GOOS == "windows" {
@@ -170,23 +167,22 @@ func obtenerBaseDeDatos() (db *sql.DB, e error) {
 		} else {
 			operatingSystem = "/home/daniel/Documentos/data/prueba.json"
 		}
-		jsonFile, _ := os.Open(operatingSystem)
-		byteValue, _ := ioutil.ReadAll(jsonFile)
-
-		var databases Databases
-
-		json.Unmarshal(byteValue, &databases)
-
-		host := databases.Databases[0].Host
-		usuario := databases.Databases[0].Usuario
-		pass := databases.Databases[0].Pass
-		nombreBaseDeDatos := databases.Databases[0].NombreBaseDeDatos
 
 	*/
-	host := "tcp(127.0.0.1:3306)"
-	usuario := "root"
-	pass := "Dangel102"
-	nombreBaseDeDatos := "local"
+
+	jsonFile, _ := os.Open(operatingSystem)
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var databases Databases
+
+	json.Unmarshal(byteValue, &databases)
+
+	var host, usuario, pass, nombreBaseDeDatos string
+
+	host = databases.Databases[0].Host
+	usuario = databases.Databases[0].Usuario
+	pass = databases.Databases[0].Pass
+	nombreBaseDeDatos = databases.Databases[0].NombreBaseDeDatos
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s/%s", usuario, pass, host, nombreBaseDeDatos))
 	if err != nil {
@@ -254,12 +250,13 @@ func typeCar() fyne.Widget {
 	return widget.NewSelect([]string{"Moto", "Taxi chico", "Taxi Grande", "Colegial", "Seda", "SUV", "Pick Up", "Busito"}, func(value string) {
 		seccion := newOptionCar(value)
 		fmt.Println("seccion seleccion:", seccion.Seccion)
-		crearArchivo()
+		crearArchivo(value, "/dataTypeCar")
 	})
 }
 func LavadoSelect() fyne.Widget {
 	LavadoSelect := widget.NewSelect([]string{"Espuma", "Sin espuma"}, func(value string) {
 		fmt.Println("seccion seleccion:", value)
+		crearArchivo(value, "/dataLavado")
 	})
 	return LavadoSelect
 }
@@ -282,7 +279,7 @@ func form(w fyne.Window) fyne.Widget {
 			{Text: "Modelo", Widget: entryModel},
 			{Text: "Detalles", Widget: textArea},
 			{Text: "Opciones", Widget: containerOption()},
-			//	{Text: "Accesorio", Widget: gridProduct()},
+			{Text: "Accesorio", Widget: gridProduct()},
 		},
 		SubmitText: "Siguiente",
 		OnSubmit: func() { // optional, handle form submission
